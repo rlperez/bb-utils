@@ -1,0 +1,8 @@
+{:paths ["src" "test"]
+ :min-bb-version "1.12.209"
+ :deps {org.babashka/cli {:mvn/version "0.8.66"}}
+ :tasks
+ {test {:doc "Run tests"
+        :requires ([bb-utils.test-runner])
+        :task (exec 'bb-utils.test-runner/run-tests)}}}
+
