@@ -17,9 +17,14 @@
       (subs branch 2)
       nil)))
 
+(defn- change? [line]
+  (and (not-empty line)
+       (and (>= (count line) 2)
+            (not (= (subs line 0 2) "??")))))
+
 (defn- any-changes?
   [path]
-  (not (str/blank? (-> (shell {:out :string :dir path} "git" "status" "--short") :out str))))
+  (some change? (str/split-lines (-> (shell {:out :string :dir path} "git" "status" "--short") :out str))))
 
 (defn- git-repo?
   [path]
@@ -28,7 +33,14 @@
 
 (defn get-repos
   [path]
-  (let [base-path (or path ".")]
-    (println base-path)
+  (let [base-path (or path "./")]
     (map #(.toString %) (filter git-repo? (fs/list-dir base-path)))))
 
+(defn pull-all
+  [path]
+  (let [base-path (or path "./")
+        repos (get-repos base-path)]
+    (map #((if (any-changes? (str base-path %))
+             (println (str "Skipping " % ". Uncommitted changes found."))
+             (shell {:out :string :dir (str base-path %)} "git" "pull")))
+         repos)))
