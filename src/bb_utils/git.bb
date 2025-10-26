@@ -5,6 +5,14 @@
             [babashka.fs :as fs]
             [clojure.string :as str]))
 
+(defn get-path-or-default
+  ([path]
+   (get-path-or-default path nil))
+  ([path rest]
+   (let [path (or path "./")
+         rest (or rest nil)]
+     (str/replace (str path rest) "/./" "/"))))
+
 (defn- filter-current-branch
   [output]
   (let [branches (str/split-lines output)]
@@ -33,14 +41,19 @@
 
 (defn get-repos
   [path]
-  (let [base-path (or path "./")]
+  (let [base-path (get-path-or-default path)]
     (map #(.toString %) (filter git-repo? (fs/list-dir base-path)))))
+
+(defn pull
+  [path]
+  (if (any-changes? path)
+    (println (str "Skipping " path ". Uncommitted changes found."))
+    (shell {:out :string :dir path} "git" "pull")))
 
 (defn pull-all
   [path]
-  (let [base-path (or path "./")
-        repos (get-repos base-path)]
-    (map #((if (any-changes? (str base-path %))
-             (println (str "Skipping " % ". Uncommitted changes found."))
-             (shell {:out :string :dir (str base-path %)} "git" "pull")))
-         repos)))
+  (let [path (get-path-or-default path)
+        repos (get-repos path)]
+    (doseq [repo-path repos]
+      (let [full-repo-path (get-path-or-default path repo-path)]
+        (pull full-repo-path)))))
