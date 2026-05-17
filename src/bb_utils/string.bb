@@ -1,4 +1,5 @@
 #!/usr/bin/env bb
+
 (ns bb-utils.string
   (:import [java.util Base64]))
 
